@@ -6,6 +6,7 @@ int main()
 {
     FILE *fp;
 
+    // Testing to see if file exist
     if (access("test.txt",F_OK) == 0){
 
         printf("File exist");
