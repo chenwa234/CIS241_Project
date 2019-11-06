@@ -17,6 +17,7 @@ void md5(uint8_t *initial_msg, size_t initial_len);
 int main()
 {
 
+    md5("fox",3);
     return 0;
 
 }
@@ -30,7 +31,8 @@ void md5(uint8_t *initial_msg, size_t initial_len)
 
     // Message (to prepare)
 
-    uint8_t *msg = NULL;
+    uint8_t *msg;
+    uint8_t one = 128;
 
     // Note: All variables are unsigned 32 bit and wrap modulo 2^32 when calculating
     // r specifies the per-round shift amounts
@@ -80,7 +82,18 @@ void md5(uint8_t *initial_msg, size_t initial_len)
         max_len += 512;
     }
 
-    new_length = max_len; // now we know the length of the string
+    msg = calloc(max_len + 64, 1); // set full length of string
+    memcpy(msg, initial_msg, initial_len); // copies over message
+    msg[initial_len] = 128; // add the 1 bit at end of message and replace '\n'
+
+    // append the length of the message
+    uint32_t bit_len = 8 * initial_len; // finding the overall bits used for the string
+    memcpy(msg + max_len, &bit_len, 4); // append length
+
+    printf("%x",msg[3]);
+
+
+    free(msg);
 
 }
 
