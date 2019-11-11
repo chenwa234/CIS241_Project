@@ -17,22 +17,48 @@ void md5(uint8_t *initial_msg, size_t initial_len);
 int main()
 {
 
-    md5("fox",3);
+    uint8_t *word = "fox ";
+    size_t a= sizeof(word);
+    md5(word,a);
     return 0;
 
 }
+/*
+uint32_t gateOp(uint32_t x, uint32_t y, uint32_t z, char letter){
 
+    if (letter == 'F'){
+
+        return ((x & y) | (~x & z));
+    }
+
+    else if(letter == 'G'){
+
+        return ((x & z) | (y & ~z));
+    }
+
+    else if (letter == 'H'){
+
+        return (x ^ y ^ z);
+    }
+
+    else if (letter == 'I'){ // must be I
+
+        return (y ^ ( x | ~z));
+    }
+
+    return 0;
+}
+*/
 
 void md5(uint8_t *initial_msg, size_t initial_len)
 {
     // some variables
-    int i;
-    int max_len = 448;
+    //int i;
+
 
     // Message (to prepare)
 
     uint8_t *msg;
-    uint8_t one = 128;
 
     // Note: All variables are unsigned 32 bit and wrap modulo 2^32 when calculating
     // r specifies the per-round shift amounts
@@ -74,13 +100,17 @@ void md5(uint8_t *initial_msg, size_t initial_len)
     h2 = 0x98badcfe; // C
     h3 = 0x10325476; // D
 
-    // Note initial len is in length
-    uint32_t new_length = (initial_len * 8) - 8; // get number of bits used excluding final'\n
+    /* Note initial len is in length
+    uint32_t new_length = (initial_len * 8); // get number of bits used excluding final'\n
 
-    while (new_length > max_len){
+    while (new_length > max_len)
+    {
 
         max_len += 512;
     }
+    */
+
+    int max_len = ((((initial_len + 8) / 64) + 1) * 64) - 8;
 
     msg = calloc(max_len + 64, 1); // set full length of string
     memcpy(msg, initial_msg, initial_len); // copies over message
@@ -90,7 +120,82 @@ void md5(uint8_t *initial_msg, size_t initial_len)
     uint32_t bit_len = 8 * initial_len; // finding the overall bits used for the string
     memcpy(msg + max_len, &bit_len, 4); // append length
 
-    printf("%x",msg[3]);
+    int offset;
+    for(offset = 0; offset < max_len; offset += (512/8))
+    {
+
+        uint32_t *w = (uint32_t *)(msg + offset);
+
+        uint32_t a = h0; // hash values for chunks
+        uint32_t b = h1;
+        uint32_t c = h2;
+        uint32_t d = h3;
+
+        uint32_t j;
+
+        for (j = 0; j < 64; j++)
+        {
+            uint32_t f,g;
+
+            if (j < 16) {
+
+                f = (b & c) | ((~b) & d);
+
+                g = j;
+
+            } else if (j < 32) {
+
+                f = (d & b) | ((~d) & c);
+
+                g = (5*j + 1) % 16;
+
+            } else if (j < 48) {
+
+                f = b ^ c ^ d;
+
+                g = (3*j + 5) % 16;
+
+            } else {
+
+                f = c ^ (b | (~d));
+
+                g = (7*j) % 16;
+
+            }
+
+            uint32_t temp = d;
+            a = b + LEFTROTATE((a + f + k[j] + w[g]), s[j]);
+
+            d = c;
+            c = b;
+            b = a;
+            a = temp;
+
+        }
+        h0 += a;
+
+        h1 += b;
+
+        h2 += c;
+
+        h3 += d;
+    }
+
+    uint8_t *p;
+    // display result
+
+    p=(uint8_t *)&h0;
+    printf("%2.2x%2.2x%2.2x%2.2x", p[0], p[1], p[2], p[3]);
+
+    p=(uint8_t *)&h1;
+    printf("%2.2x%2.2x%2.2x%2.2x", p[0], p[1], p[2], p[3]);
+
+    p=(uint8_t *)&h2;
+    printf("%2.2x%2.2x%2.2x%2.2x", p[0], p[1], p[2], p[3]);
+
+    p=(uint8_t *)&h3;
+    printf("%2.2x%2.2x%2.2x%2.2x", p[0], p[1], p[2], p[3]);
+    puts("");
 
 
     free(msg);
