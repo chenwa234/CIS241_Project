@@ -6,45 +6,65 @@
 #include <stdint.h>
 
 uint32_t h0, h1, h2, h3;
+
 void getFilename(char *filename);
 void switch_slash(char *str);
+void getStr_File(char *filename, char *fileStr);
 void md5(uint8_t *initial_msg, size_t initial_len);
+void combineHash(char *str, uint32_t *h1, uint32_t *h2);
+
 
 #define MAX 100000
+#define MAX_STR 100000
+#define MAX_COMB_HASH 65
 #define LEFTROTATE(x, c) (((x) << (c)) | ((x) >> (32 - (c))))
 
 int main()
 {
-    FILE *fp;
-
-    char filename[MAX_PATH];
+    char filename[MAX_PATH] = {0};
     int userInput = 1;
 
     uint32_t hashValue[MAX][4]; // store hash value
     int fileTotal = 0; // Total number of files
 
+    char fileStr[MAX_STR];
+    char hashValueStr_Correct[33] = {0};
+
+    char combine[65] = {0};
+
     int i = 0;
+    int user_Cont = 1;
+    int valid = 0;
 
     // user input for file
-    while (userInput)
+    while (userInput == 1)
     {
 
         // get filename
-        printf("Enter File Path or File name in same folder: ");
-        getFilename(filename);
+        printf("Enter File Pathname or Stop to quit input: ");
+
+        while (strlen(filename) == 0)
+            getFilename(filename);
         switch_slash(filename);
 
+        printf("filename = %s\n", filename);
+
+        // checking if filepath exist
         if (access(filename,F_OK) == 0)
         {
+            // Making sure it is not the actual hashvalue file
             if (strcmp(filename, "HashMapSave.txt") == 0)
             {
                 printf("This file can not be open due to save hash value.\n");
             }
 
+            // None of the above calc hash value for file
             else
             {
 
-                printf("Opening %s", filename);
+                printf("Opening %s\n", filename);
+                getStr_File(filename, fileStr);
+                md5(fileStr, strlen(fileStr));
 
                 hashValue[fileTotal][0] = h0; // saving values in an array
                 hashValue[fileTotal][1] = h1;
@@ -60,8 +80,39 @@ int main()
             printf("File %s does not exist.\n", filename);
         }
 
-        // ** Add Termination
+
+        while (valid == 0)
+        {
+
+            printf("Enter 0 to stop or 1 to continue: ");
+            valid = scanf("%d",&user_Cont);
+
+            if (valid == 1)
+            {
+
+                if (user_Cont == 1 || user_Cont == 0)
+                {
+                    valid = 1;
+                    userInput = user_Cont;
+                }
+                else
+                {
+
+                    printf("Enter value must be 1 or 0.\n\n");
+                    valid = 0;
+                }
+            }
+            else
+            {
+                printf("Enter value is not an integer.\n");
+            }
+        }
+
+        valid = 0;
+        strcpy(filename,"\0"); // solves extermly stop issue
     }
+
+
 
     // Compute Final Hash Value
     // Merkle Tree
@@ -72,9 +123,15 @@ int main()
         for (i = 0; i <= fileTotal - 2; i += 2)
         {
 
-            /*** Combine Hash Value **/ /** Use Sting cat **/
-            /** Calc new Hash Value and Save **/
+            combineHash(combine,hashValue[slot],hashValue[slot + 1]);
+            md5(combine,strlen(combine));
+
+            hashValue[slot][0] = h0; // saving values in an array
+            hashValue[slot][1] = h1;
+            hashValue[slot][2] = h2;
+            hashValue[slot][3] = h3;
             slot++;
+
         }
 
         if (fileTotal % 2 == 1)
@@ -84,22 +141,48 @@ int main()
             hashValue[slot][1] = hashValue[fileTotal - 1][1];
             hashValue[slot][2] = hashValue[fileTotal - 1][2];
             hashValue[slot][3] = hashValue[fileTotal - 1][3];
-
         }
 
-        // hashValue[slot] = hashValue[fileTotal - 1]; /** Maybe Add **/
+        // hashValue[slot] = hashValue[fileTotal - 1];
         fileTotal = fileTotal / 2 + fileTotal % 2;
     }
 
-    /*** Open File and Compare with Calc hash Value **/
-    /*** END, rewrite new Hash Value **/
 
-    //fclose(fp);
+    uint8_t *p;
+
+    // display result
+
+
+
+    p=(uint8_t *)&hashValue[0][0];
+
+    printf("%2.2x%2.2x%2.2x%2.2x", p[0], p[1], p[2], p[3]);
+
+
+
+    p=(uint8_t *)&hashValue[0][1];
+
+    printf("%2.2x%2.2x%2.2x%2.2x", p[0], p[1], p[2], p[3]);
+
+
+
+    p=(uint8_t *)&hashValue[0][2];
+
+    printf("%2.2x%2.2x%2.2x%2.2x", p[0], p[1], p[2], p[3]);
+
+
+
+    p=(uint8_t *)&hashValue[0][3];
+
+    printf("%2.2x%2.2x%2.2x%2.2x", p[0], p[1], p[2], p[3]);
+
+    puts("");
+
 
     return 0;
 }
 
-void getFilename(char *filename)
+void getFilename(char *str)
 {
 
     int i;
@@ -110,13 +193,13 @@ void getFilename(char *filename)
     {
 
         c = getchar();
-        filename[i] = c;
+        str[i] = c;
         if (c == '\n')
         {
             break;
         }
     }
-    filename[i] = '\n';
+    str[i] = '\0';
 }
 
 void switch_slash(char *str)
@@ -130,6 +213,25 @@ void switch_slash(char *str)
             str[index] = '/';
         index++;
     }
+}
+
+void getStr_File(char *filename, char *fileStr)
+{
+
+    FILE *fp;
+    unsigned int i = 0;
+
+    fp = fopen(filename,"r");
+
+    while(!feof(fp) || i == MAX_STR)
+    {
+
+        fscanf(fp,"%c", &fileStr[i]);
+        i++;
+    }
+
+
+    fclose(fp);
 }
 
 void md5(uint8_t *initial_msg, size_t initial_len)
@@ -235,7 +337,35 @@ void md5(uint8_t *initial_msg, size_t initial_len)
         h1 += b;
         h2 += c;
         h3 += d;
-    }
+
+
 
     free(msg);
+
+    }
+}
+
+void combineHash(char *str, uint32_t *h1, uint32_t *h2){
+
+    char combineStr[MAX_COMB_HASH] = {0};
+    char part[9]= {0};
+    int i;
+
+    uint8_t *p;
+
+    for (i = 0; i < 4; i++){
+
+        p=(uint8_t *)&h1[i];
+        sprintf(part,"%2.2x%2.2x%2.2x%2.2x", p[0], p[1], p[2], p[3]);
+        strcat(combineStr,part);
+    }
+
+    for (i = 0; i < 4; i++){
+
+        p=(uint8_t *)&h2[i];
+        sprintf(part,"%2.2x%2.2x%2.2x%2.2x", p[0], p[1], p[2], p[3]);
+        strcat(combineStr,part);
+    }
+
+    strcpy(str,combineStr);
 }
