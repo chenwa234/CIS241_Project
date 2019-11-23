@@ -3,7 +3,7 @@
  Date: 12-02-19
  Description: Program reads in file and calculates the final hash value
  Notes: Reads txt file only
- Version: 2.0
+ Version: 3.0
  Citations: MD5 Code - Tim Caswell - https://gist.github.com/creationix/4710780
           : Test Sources for Comparsition
                 Site 1:
@@ -19,10 +19,12 @@
 #include <stdint.h>
 
 uint32_t h0, h1, h2, h3;
+unsigned char *buffer2;
+
 
 void getFilename(char *filename);
 void switch_slash(char *str);
-void getStr_File(char *filename, char *fileStr);
+void getStr_File(char *filename);
 void md5(uint8_t *initial_msg, size_t initial_len);
 void combineHash(char *str, uint32_t *h1, uint32_t *h2);
 
@@ -39,16 +41,17 @@ int main()
     uint32_t hashValue[MAX][4]; // store hash value
     int fileTotal = 0; // Total number of files
 
-    char fileStr[MAX_STR];
-    char hashValueStr_Correct[33] = {0};
+    //char fileStr[MAX_STR];
+    //unsigned char *fileStr;
+    //char hashValueStr_Correct[33] = {0};
 
     char combine[65] = {0};
 
     char user_Cont = 'A';
-    int i;
+    int i = 0;
 
     // user input for file
-    while (userInput == 1)
+    while (userInput == 1 && i != MAX)
     {
 
         // get filename
@@ -57,8 +60,6 @@ int main()
         while (strlen(filename) == 0)
             getFilename(filename);
         switch_slash(filename);
-
-        printf("filename = %s\n", filename);
 
         // checking if filepath exist
         if (access(filename,F_OK) == 0)
@@ -78,9 +79,10 @@ int main()
             else
             {
 
-                printf("Opening %s\n", filename);
-                getStr_File(filename, fileStr);
-                md5(fileStr, strlen(fileStr));
+                printf("Opening %s\n\n", filename);
+                getStr_File(filename);
+                md5(buffer2, strlen(buffer2));
+                free(buffer2);
 
                 hashValue[fileTotal][0] = h0; // saving values in an array
                 hashValue[fileTotal][1] = h1;
@@ -222,26 +224,64 @@ void switch_slash(char *str)
     }
 }
 
-void getStr_File(char *filename, char *fileStr)
+void getStr_File(char *filename)
 {
 
     FILE *fp;
-    unsigned int i = 0;
+    char temp[21] ={0};
 
-    fp = fopen(filename,"r");
+    int lSize;
+    unsigned char *buffer; // pointer for calloc
+    int bufferSize = 0;
 
-    while(!feof(fp) || i == MAX_STR)
-    {
+    int i = 0;
+    int j = 0;
+    int k = 0;
 
-        fscanf(fp,"%c", &fileStr[i]);
-        i++;
+    fp = fopen ( filename, "rb" );
+    if( !fp ) perror(filename),exit(1);
+
+    fseek( fp, 0L, SEEK_END);
+    lSize = ftell( fp );
+    rewind( fp );
+
+    /* allocate memory for entire content */
+    buffer = calloc(1, lSize + 1);
+    if( !buffer ) fclose(fp),fputs("memory alloc fails",stderr),exit(1);
+
+    /* copy the file into the buffer */
+    if( 1!=fread( buffer, lSize, 1, fp) )
+        fclose(fp),free(buffer),fputs("entire read fails",stderr),exit(1);
+
+    for(i = 0; i < lSize; i++){
+        if (buffer[i] == '\0' && bufferSize != 0)
+            break;
+        else{
+            bufferSize++;
+        }
+    }
+
+    sprintf(temp,"%d",lSize); // get file size
+
+    buffer2 = calloc(1, (bufferSize + strlen(temp))); // set memory size
+    for (i = 0; i < bufferSize + strlen(temp); i++){ // store data
+
+        if (i < bufferSize){
+            buffer2[i] = buffer[i];
+        }
+
+        else{
+
+            buffer2[i] = temp[j];
+            j++;
+        }
     }
 
     fclose(fp);
+    free(buffer);
 }
 
 void md5(uint8_t *initial_msg, size_t initial_len)
-
 {
 
     uint8_t *msg;
