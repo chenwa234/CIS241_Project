@@ -5,10 +5,12 @@
  Notes: Reads txt file only
  Version: 3.0
  Citations: MD5 Code - Tim Caswell - https://gist.github.com/creationix/4710780
+          : Binary Read https://stackoverflow.com/questions/3747086/reading-
+            the-whole-text-file-into-a-char-array-in-c?noredirect=1&lq=1
           : Test Sources for Comparsition
-                Site 1:
-                Site 2:
-                Site 3:
+                Site 1: https://www.md5hashgenerator.com/
+                Site 2: https://passwordsgenerator.net/md5-hash-generator/
+                Site 3: https://news.ycombinator.com/item?id=5653698
 ***************************************************************************/
 
 #include <stdio.h>
@@ -20,7 +22,6 @@
 
 uint32_t h0, h1, h2, h3;
 unsigned char *buffer2;
-
 
 void getFilename(char *filename);
 void switch_slash(char *str);
@@ -40,10 +41,6 @@ int main()
 
     uint32_t hashValue[MAX][4]; // store hash value
     int fileTotal = 0; // Total number of files
-
-    //char fileStr[MAX_STR];
-    //unsigned char *fileStr;
-    //char hashValueStr_Correct[33] = {0};
 
     char combine[65] = {0};
 
@@ -67,12 +64,6 @@ int main()
             if (access(filename,R_OK != 0)){
 
                 printf("File can not be read\n");
-            }
-
-            // Making sure it is not the actual hashvalue file
-            if (strcmp(filename, "HashMapSave.txt") == 0)
-            {
-                printf("This file can not be open due to save hash value.\n");
             }
 
             // None of the above calc hash value for file
@@ -236,10 +227,16 @@ void getStr_File(char *filename)
 
     int i = 0;
     int j = 0;
-    int k = 0;
 
     fp = fopen ( filename, "rb" );
     if( !fp ) perror(filename),exit(1);
+
+    if (fp == NULL){ // Null Pointer error
+
+        printf("Null File pointer detected\n");
+        exit(1);
+    }
+
 
     fseek( fp, 0L, SEEK_END);
     lSize = ftell( fp );
